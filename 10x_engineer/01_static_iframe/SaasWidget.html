@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Iframe Content</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f0f0f0; padding: 20px;}
+        button { margin-top: 10px; padding: 8px 15px; cursor: pointer; border-radius: 4px; border: 1px solid #ccc;}
+        input[type="text"] { padding: 6px; margin-left: 5px; border-radius: 4px; border: 1px solid #ccc;}
+        label { margin-left: 15px; }
+         .controls { margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<h2>Iframe Content (http://localhost:8001)</h2>
+<p>This content is loaded inside an iframe .</p>
+
+<div class="controls">
+    <label for="saasWidgetSendSize">Data size to send (KB):</label>
+    <input type="text" id="saasWidgetSendSize" value="1" size="5">
+    <button id="sendToHostAppBtn">Send Message to HostApp</button>
+</div>
+
+<h3>Received Messages from HostApp:</h3>
+<ul id="saasWidgetMessages"></ul>
+
+
+<script>
+    const sendBtn = document.getElementById('sendToHostAppBtn'); // Renamed ID
+    const messageList = document.getElementById('saasWidgetMessages'); // Renamed ID
+    const sendSizeInput = document.getElementById('saasWidgetSendSize'); // Renamed ID
+
+     // Function to generate a string of a specific size (in KB)
+    function generateLargeString(kb) {
+        const bytes = kb * 1024;
+        let result = '';
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        const charactersLength = characters.length;
+        for (let i = 0; i < bytes; i++) {
+            result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        }
+        return result;
+    }
+
+    // --- SaasWidget sending message to HostApp --- // Renamed comment
+    sendBtn.addEventListener('click', () => {
+      const sizeKB = parseInt(sendSizeInput.value, 10) || 0; // Get size from input, default to 0 if invalid
+      const largeData = generateLargeString(sizeKB);
+
+      const messageData = {
+        status: 'SaasWidget is alive!', // Renamed status message
+        random: Math.random(),
+        dataSizeKB: sizeKB,
+        payload: largeData, // Include the generated large string
+        sendTimestamp: performance.now() // Add a high-resolution timestamp
+      };
+
+      const hostAppWindow = window.parent; // Renamed variable
+
+      // Use postMessage to send data to the HostApp
+      // IMPORTANT: Replace 'http://localhost:8000' with the actual,
+      // expected origin of the HostApp page for security!
+      hostAppWindow.postMessage(messageData, 'http://localhost:8000');
+      console.log(`SaasWidget: Sent message (${sizeKB} KB) to HostApp`, messageData); // Renamed log message
+    });
+
+
+    // --- SaasWidget receiving message from HostApp --- // Renamed comment
+    window.addEventListener('message', (event) => {
+      console.log('SaasWidget: Received message event', event); // Renamed log message
+
+      // !!! IMPORTANT SECURITY CHECK !!!
+      const expectedOrigin = 'http://localhost:8000';
+      if (event.origin !== expectedOrigin) {
+        console.warn('SaasWidget: Received message from unexpected origin:', event.origin); // Renamed warning message
+        return;
+      }
+
+      const receivedData = event.data;
+      const dataSize = receivedData.payload ? (receivedData.payload.length / 1024).toFixed(2) : 'N/A';
+
+      // Calculate the time taken if a sendTimestamp exists
+      let timeTaken = 'N/A';
+      if (receivedData.sendTimestamp) {
+          const receiveTimestamp = performance.now();
+          timeTaken = ((receiveTimestamp - receivedData.sendTimestamp) / 1000).toFixed(4) + ' sec';
+      }
+
+      console.log(`SaasWidget: Received message data (${dataSize} KB):`, receivedData); // Renamed log message
+
+      const listItem = document.createElement('li');
+      // Truncate the payload for display
+      const displayedPayload = receivedData.payload && receivedData.payload.length > 20
+                                ? receivedData.payload.substring(0, 20) + '...'
+                                : receivedData.payload;
+
+      // Create a new object for display to avoid modifying the original receivedData
+      const displayData = { ...receivedData, payload: displayedPayload };
+
+      listItem.textContent = `From ${event.origin} (HostApp) - Size: ${dataSize} KB - Time: ${timeTaken}: ${JSON.stringify(displayData)}`; // Renamed display text
+      messageList.appendChild(listItem);
+    });
+
+    console.log('SaasWidget: Listening for messages...'); // Renamed log message
+
+</script>
+
+</body>
+</html>

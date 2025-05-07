@@ -1,0 +1,30 @@
+@startuml
+Title: AppGenie Workflow - Setup Phase
+
+' global config
+hide footbox
+
+' Entity Declaration :: START
+box "Existing App" #GhostWhite
+participant "Existing App" as ExistingApp #LightGreen
+actor "Existing App Owner" as Owner #LightBlue
+end box
+participant "AppGenie Server" as AppGenie #Orange
+' Entity Declaration :: END
+
+
+' Main Diagram :: START
+Owner -> AppGenie: Register Project & Tenant
+AppGenie --> Owner: Provide JS Code Snippet
+Owner -> AppGenie: (Optional) Configure AI Prompts
+note right
+Store prompts specific
+for ExistingApp
+end note
+
+Owner -> ExistingApp: Add JS Code Snippet
+||45||
+ExistingApp -> AppGenie: Initialize AppGenie resources
+' Main Diagram :: END
+
+@enduml

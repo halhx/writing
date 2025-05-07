@@ -1,0 +1,49 @@
+@startuml
+Title: AppGenie Workflow - User Interaction Phase
+
+' global config
+hide footbox
+
+' Entity Declaration :: START
+box "Existing App" #GhostWhite
+actor "Existing App User" as User #Lavender
+participant "Existing App" as ExistingApp #LightGreen
+end box
+participant "AppGenie Server" as AppGenie #Orange
+' Entity Declaration :: END
+
+
+' Main Diagram :: START
+User -> ExistingApp: Use Existing App
+
+ExistingApp -> AppGenie: Initialize AppGenie resources
+note right
+Load ExistingApp prompts
+and configurations
+end note
+
+AppGenie --> ExistingApp: Provide Chat UI & JS Data API
+
+ExistingApp -> AppGenie: Send data [File] via JS Data API
+
+ExistingApp --> User: Display Chat Popup
+
+||30||
+
+User -> ExistingApp: Interact with Chat
+
+ExistingApp -> AppGenie: Forward User question
+note right
+Process question using
+Existing App's prompt with
+UAIS under the hood
+end note
+
+AppGenie --> ExistingApp: Send AI/System Response
+
+ExistingApp --> User: Display Response in Chat Popup
+
+User -> ExistingApp: Continue Interaction...
+' Main Diagram :: END
+
+@enduml

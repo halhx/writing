@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HostApp Page (Script Embed)</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px;}
+        /* No iframe style needed anymore */
+        button { margin-top: 10px; padding: 8px 15px; cursor: pointer; border-radius: 4px; border: 1px solid #ccc;}
+        input[type="text"] { padding: 6px; margin-left: 5px; border-radius: 4px; border: 1px solid #ccc;}
+        label { margin-left: 15px; }
+        .controls { margin-bottom: 15px; }
+        /* Style for the container where SaasWidget will inject its content */
+        #saasWidgetContainer {
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px dashed green; /* Visual indicator of the injected area */
+            background-color: #e9ffe9;
+        }
+    </style>
+</head>
+<body>
+
+<h1>HostApp Page (http://localhost:8000) - Script Embed</h1>
+<p>Open your browser's console to see messages and data sizes.</p>
+<p>SaasWidget content is now injected directly via a script tag.</p>
+
+<div id="saasWidgetContainer">
+    <p>Loading SaasWidget content...</p>
+</div>
+
+<script src="http://localhost:8001/saaswidget.js?app_id=host_app_123"></script>
+
+<h2>Interaction with SaasWidget (from HostApp context):</h2>
+<div class="controls">
+    <label for="hostAppSendSizeScript">Data size to send (KB) to SaasWidget script:</label>
+    <input type="text" id="hostAppSendSizeScript" value="1" size="5">
+    <button id="sendToSaasWidgetScriptBtn">Send Message to SaasWidget Script</button>
+</div>
+
+<h2>Messages Received from SaasWidget Script:</h2>
+<ul id="hostAppMessagesScript"></ul>
+
+
+<script>
+    // This script runs in the context of HostApp.html
+
+    const sendBtnScript = document.getElementById('sendToSaasWidgetScriptBtn'); // Renamed ID
+    const messageListScript = document.getElementById('hostAppMessagesScript'); // Renamed ID
+    const sendSizeInputScript = document.getElementById('hostAppSendSizeScript'); // Renamed ID
+
+     // Function to generate a string of a specific size (in KB) - can be shared
+    function generateLargeString(kb) {
+        const bytes = kb * 1024;
+        let result = '';
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        const charactersLength = characters.length;
+        for (let i = 0; i < bytes; i++) {
+            result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        }
+        return result;
+    }
+
+    // Function to simulate HostApp sending a message TO the embedded SaasWidget script
+    sendBtnScript.addEventListener('click', () => {
+        const sizeKB = parseInt(sendSizeInputScript.value, 10) || 0;
+        const largeData = generateLargeString(sizeKB);
+
+        const messageData = {
+            greeting: 'Hello from HostApp (via script trigger)!', // Renamed greeting
+            timestamp: new Date().toISOString(),
+            dataSizeKB: sizeKB,
+            payload: largeData,
+            sendTimestamp: performance.now()
+        };
+
+        // To send a message to the embedded script, we need a way for the script
+        // to expose a function or listen for a custom event.
+        // For this POC, we'll assume the SaasWidget script defines a global function
+        // like 'handleMessageFromHostApp'.
+        if (window.handleMessageFromHostApp) { // Renamed function call
+            window.handleMessageFromHostApp(messageData); // Renamed function call
+            console.log(`HostApp: Sent message (${sizeKB} KB) to SaasWidget script`, messageData); // Renamed log message
+        } else {
+            console.warn('HostApp: SaasWidget script handler not available yet.'); // Renamed warning message
+        }
+    });
+
+    // Function for the embedded SaasWidget script to call when it sends a message back
+    // This simulates the SaasWidget script sending data back to the HostApp context
+    window.handleMessageFromSaasWidget = (messageData) => { // Renamed function definition
+        console.log('HostApp: Received message from SaasWidget script', messageData); // Renamed log message
+
+        const dataSize = messageData.payload ? (messageData.payload.length / 1024).toFixed(2) : 'N/A';
+
+        let timeTaken = 'N/A';
+        if (messageData.sendTimestamp) {
+            const receiveTimestamp = performance.now();
+            timeTaken = ((receiveTimestamp - messageData.sendTimestamp) / 1000).toFixed(4) + ' sec';
+        }
+
+        const listItem = document.createElement('li');
+        const displayedPayload = messageData.payload && messageData.payload.length > 20
+                                  ? messageData.payload.substring(0, 20) + '...'
+                                  : messageData.payload;
+        const displayData = { ...messageData, payload: displayedPayload };
+
+        listItem.textContent = `From SaasWidget Script - Size: ${dataSize} KB - Time: ${timeTaken}: ${JSON.stringify(displayData)}`; // Renamed display text
+        messageListScript.appendChild(listItem);
+    };
+
+    console.log('HostApp: Page loaded, waiting for SaasWidget script...'); // Renamed log message
+
+</script>
+
+</body>
+</html>
